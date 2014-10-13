@@ -1,5 +1,3 @@
-package main
-
 /**
  * Toy chat server implementation
  * Needs support for parsing user input and sending/listing messages as such
@@ -10,6 +8,7 @@ package main
  *
  * Uses RPC
  */
+package main
 
 import (
 	"bufio"
@@ -27,7 +26,6 @@ import (
 
 type Nothing bool
 
-// New types
 type Message struct {
 	User   string
 	Target string
@@ -40,10 +38,7 @@ type ChatClient struct {
 	Client   *rpc.Client
 }
 
-/**
- * Helper function to get an RPC connection if one is missing
- */
-func (c *ChatClient) GetClientConnection() *rpc.Client {
+func (c *ChatClient) getClientConnection() *rpc.Client {
 	var err error
 
 	if c.Client == nil {
@@ -56,9 +51,10 @@ func (c *ChatClient) GetClientConnection() *rpc.Client {
 	return c.Client
 }
 
+// Register takes a username and registers it with the server
 func (c *ChatClient) Register() {
 	var reply string
-	c.Client = c.GetClientConnection()
+	c.Client = c.getClientConnection()
 
 	err := c.Client.Call("ChatServer.Register", c.Username, &reply)
 	if err != nil {
@@ -68,9 +64,10 @@ func (c *ChatClient) Register() {
 	}
 }
 
+// CheckMessages does a check every second for new messages for the user
 func (c *ChatClient) CheckMessages() {
 	var reply []string
-	c.Client = c.GetClientConnection()
+	c.Client = c.getClientConnection()
 
 	for {
 		err := c.Client.Call("ChatServer.CheckMessages", c.Username, &reply)
@@ -86,10 +83,11 @@ func (c *ChatClient) CheckMessages() {
 	}
 }
 
+// List lists all the users in the chat currently
 func (c *ChatClient) List() {
 	var reply []string
 	var none Nothing
-	c.Client = c.GetClientConnection()
+	c.Client = c.getClientConnection()
 
 	err := c.Client.Call("ChatServer.List", none, &reply)
 	if err != nil {
@@ -101,8 +99,10 @@ func (c *ChatClient) List() {
 	}
 }
 
+// Tell sends a message to a specific user
 func (c *ChatClient) Tell(params []string) {
 	var reply Nothing
+	c.Client = c.getClientConnection()
 
 	if len(params) > 2 {
 		msg := strings.Join(params[2:], " ")
@@ -121,8 +121,10 @@ func (c *ChatClient) Tell(params []string) {
 	}
 }
 
+// Say sends a message to all users
 func (c *ChatClient) Say(params []string) {
 	var reply Nothing
+	c.Client = c.getClientConnection()
 
 	if len(params) > 2 {
 		msg := strings.Join(params[1:], " ")
@@ -141,8 +143,10 @@ func (c *ChatClient) Say(params []string) {
 	}
 }
 
+// Logout logs out the current user and shuts down the client
 func (c *ChatClient) Logout() {
 	var reply Nothing
+	c.Client = c.getClientConnection()
 
 	err := c.Client.Call("ChatServer.Logout", c.Username, &reply)
 	if err != nil {
@@ -150,9 +154,11 @@ func (c *ChatClient) Logout() {
 	}
 }
 
+// Shutdown stops the server and logs out all users
 func (c *ChatClient) Shutdown() {
 	var request Nothing = false
 	var reply Nothing
+	c.Client = c.getClientConnection()
 
 	err := c.Client.Call("ChatServer.Shutdown", request, &reply)
 	if err != nil {
@@ -166,12 +172,6 @@ var (
 	DEFAULT_HOST = "localhost"
 )
 
-/**
- * Fun function for creating clients from commandline flags
- * @return Client, error
- *
- * @NOTE: Possibly include interactive setup mode if commandline flags fail or are not present
- */
 func createClientFromFlags() (*ChatClient, error) {
 	var c *ChatClient = &ChatClient{}
 	var host string
