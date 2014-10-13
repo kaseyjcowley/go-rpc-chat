@@ -121,6 +121,45 @@ func (c *ChatClient) Tell(params []string) {
 	}
 }
 
+func (c *ChatClient) Say(params []string) {
+	var reply Nothing
+
+	if len(params) > 2 {
+		msg := strings.Join(params[1:], " ")
+		message := Message{
+			User:   c.Username,
+			Target: params[1],
+			Msg:    msg,
+		}
+
+		err := c.Client.Call("ChatServer.Say", message, &reply)
+		if err != nil {
+			log.Printf("Error saying something: %q", err)
+		}
+	} else {
+		log.Println("Usage of say: say <msg>")
+	}
+}
+
+func (c *ChatClient) Logout() {
+	var reply Nothing
+
+	err := c.Client.Call("ChatServer.Logout", c.Username, &reply)
+	if err != nil {
+		log.Printf("Error logging out: %q", err)
+	}
+}
+
+func (c *ChatClient) Shutdown() {
+	var request Nothing = false
+	var reply Nothing
+
+	err := c.Client.Call("ChatServer.Shutdown", request, &reply)
+	if err != nil {
+		log.Printf("Error shutting down server: %q", err)
+	}
+}
+
 // Globals/Constants
 var (
 	DEFAULT_PORT = 3410
@@ -179,6 +218,14 @@ func mainLoop(c *ChatClient) {
 			c.List()
 		} else if strings.HasPrefix(line, "tell") {
 			c.Tell(params)
+		} else if strings.HasPrefix(line, "say") {
+			c.Say(params)
+		} else if strings.HasPrefix(line, "logout") {
+			c.Logout()
+			break
+		} else {
+			c.Shutdown()
+			break
 		}
 	}
 }
